@@ -26,6 +26,7 @@ from lsy_drone_racing.control.attitude_pid_v4.geometry import (
     DEFAULT_OBSTACLES,
     normalize_gate_index,
 )
+from lsy_drone_racing.control.attitude_pid_v4.trajectory import SECTOR_OBSTACLE_INDEX
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -39,6 +40,7 @@ class _ObservationFrame:
     pos: "NDArray[np.floating]"
     vel: "NDArray[np.floating]"
     quat: "NDArray[np.floating]"
+    obstacles_pos: "NDArray[np.floating]"
 
 
 def _gates_rpy(gate_quat: "NDArray[np.floating]") -> "NDArray[np.floating]":
@@ -94,6 +96,11 @@ class QualificationController(Controller):
         target_gate = normalize_gate_index(obs["target_gate"])
         gate_pos = np.asarray(obs["gates_pos"], dtype=np.float64)
         gate_quat = np.asarray(obs["gates_quat"], dtype=np.float64)
+        obstacles_raw = obs.get("obstacles_pos")
+        if obstacles_raw is None:
+            obstacles_pos = self._obstacles.copy()
+        else:
+            obstacles_pos = np.asarray(obstacles_raw, dtype=np.float64)
         return _ObservationFrame(
             target_gate=target_gate,
             gate_pos=gate_pos,
@@ -101,6 +108,7 @@ class QualificationController(Controller):
             pos=np.asarray(obs["pos"], dtype=np.float64).reshape(3),
             vel=np.asarray(obs["vel"], dtype=np.float64).reshape(3),
             quat=np.asarray(obs["quat"], dtype=np.float64).reshape(4),
+            obstacles_pos=obstacles_pos,
         )
 
     # ---- replanning -------------------------------------------------------
@@ -124,13 +132,15 @@ class QualificationController(Controller):
         tgt = frame.target_gate
         if tgt < 0 or tgt > 3:
             return
-        # Section gain switch.
         gains = self._tuning.section_gains[tgt]
         if self._active_leg != tgt:
             self._pid.set_gains(gains)
         # Cache gate state used for replan-shift detection.
         self._planned_gate_pos = frame.gate_pos.copy()
         self._planned_gate_rpy = _gates_rpy(frame.gate_quat)
+        # Use observed obstacle positions for clearance (nominal until in range,
+        # exact once the drone has them in sensor range).
+        self._obstacles = frame.obstacles_pos.copy()
         t_start = float(self._leg_start_t[tgt])
         duration = float(self._leg_times[tgt])
         reference, t_end = build_reference_curve(

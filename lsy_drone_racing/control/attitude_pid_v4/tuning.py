@@ -45,10 +45,13 @@ class RouteTuning:
         (1.38, 0.12, 1.08),
     )
 
-    # Fixed shaping points
+    # Fixed shaping points. Sector-3 mid waypoint moved north (y -0.42 ->
+    # -0.30) so the curve between mid and the (-0.2, -0.75) gate-3 entry
+    # passes ~0.31 m from obstacle 3 (was ~0.21 m); leaves headroom for the
+    # ±0.15 m obstacle position randomization.
     start_waypoint: tuple[float, float, float] = (-1.5, 0.75, 0.05)
     route2_mid_waypoint: tuple[float, float, float] = (0.0, 0.25, 1.0)
-    route3_mid_waypoint: tuple[float, float, float] = (-0.55, -0.42, 0.85)
+    route3_mid_waypoint: tuple[float, float, float] = (-0.45, -0.30, 0.95)
 
     # Obstacle clearance — per sector (4 entries)
     clearance_triggers: tuple[float, float, float, float] = (0.15, 0.15, 0.15, 0.10)
@@ -69,6 +72,8 @@ class QualificationTuning:
     lateral_acc_limit: float = 16.0
     replan_gate_delta: float = 0.005
     replan_horizontal_distance: float = 0.7
+    replan_obstacle_delta: float = 0.01
+    replan_obstacle_distance: float = 1.5
 
     @property
     def leg_start_times(self) -> tuple[float, ...]:
@@ -113,7 +118,10 @@ _SECTION_BASE_GAINS = (
 
 _NOMINAL_LEG_TIMES = (3.85, 2.5, 3.5, 2.25)
 _GLOBAL_TIME_SCALE = 0.84
-_LEG_TIME_SCALES = (0.52, 0.68, 0.65, 0.65)
+# Sector 3 was the second-largest failure source (180-deg turn through tight
+# r_in=0.2). Stretching its time scale from 0.65 -> 0.82 gives the turn more
+# headroom; nominal sector-3 time goes 1.23 s -> 1.55 s.
+_LEG_TIME_SCALES = (0.52, 0.68, 0.65, 0.82)
 
 _SPEED_PROFILES = (
     SectorSpeedProfile(1.0, 1.0, 1.4),
