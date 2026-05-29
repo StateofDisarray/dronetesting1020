@@ -22,7 +22,7 @@ TILT_RATE_LIMIT = 0.804                       # rad per 50 Hz tick
 # ==========================================
 
 # TOPP (variable-speed schedule) tunables
-V_MAX_GLOBAL = 1.3          # m/s. Speed ceiling on straights.
+V_MAX_GLOBAL = 1.1          # m/s. Speed ceiling on straights.
 TILT_LIMIT_PLANNER = 0.35   # rad. Assumed max tilt for planning (should be < controller TILT_LIMIT).
 A_LONG_MAX_FACTOR = 0.7     # a_long_max = factor * a_lat_max. Vertical thrust eats some accel budget.
 V_FLOOR = 0.3               # m/s. Floor on scheduled speed.
