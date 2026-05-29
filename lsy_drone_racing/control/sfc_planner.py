@@ -611,7 +611,10 @@ class SfcPlanner:
             return base
         # Clear the inflated pole plus the drone half-width, with a little slack.
         clearance = self.pole_radius + self.safety_margin + 0.10
-        floor = 0.25
+        # Low floor: an exit anchor with an obstacle right behind the gate (gate 2
+        # exits along -x straight at obstacle 2) must back off hard, otherwise the
+        # drone over-commits along the normal and clips the pole on the U-turn.
+        floor = 0.15
         gap = base
         while gap > floor:
             anchor_xy = (gate_pos + direction * gap)[:2]
@@ -620,6 +623,37 @@ class SfcPlanner:
                 break
             gap -= 0.05
         return max(gap, floor)
+
+    def _lateral_obstacle_bias(self, anchor: NDArray, right_dir: NDArray) -> NDArray:
+        """Shift an anchor sideways (along the gate's ``right``) off a near obstacle.
+
+        Complements ``_clear_anchor_gap`` (which only moves along the normal): when
+        an obstacle sits to one side of the approach, nudge the anchor toward the
+        open side of the gate opening so the spline + tracking error keeps clear.
+        No-op when the nearest obstacle is on the normal axis (lateral offset ~0) —
+        that case is handled by gap shortening, not a sideways push.
+        """
+        obst = self.obstacles_pos
+        if obst is None or len(obst) == 0:
+            return np.zeros(3)
+        right_xy = np.asarray(right_dir, dtype=np.float64)[:2]
+        nrm = float(np.linalg.norm(right_xy))
+        if nrm < 1e-6:
+            return np.zeros(3)
+        right_xy = right_xy / nrm
+        obst = np.asarray(obst, dtype=np.float64)
+        d = np.linalg.norm(obst[:, :2] - anchor[:2], axis=1)
+        k = int(np.argmin(d))
+        d_min = float(d[k])
+        trigger = self.pole_radius + self.safety_margin + 0.20
+        if d_min >= trigger:
+            return np.zeros(3)
+        s = float(np.dot(obst[k, :2] - anchor[:2], right_xy))  # obstacle side along +right
+        if abs(s) < 0.05:
+            return np.zeros(3)  # on-axis: gap shortening handles it
+        # Push away from the obstacle, capped to stay inside the ~0.2m opening half-width.
+        push = -np.sign(s) * min(trigger - d_min, 0.12)
+        return np.asarray(right_dir, dtype=np.float64) * push
 
     def _calculate_anchors(self, current_pos: NDArray) -> list[SkeletonPoint]:
         gate_normals = R.from_quat(self.gates_quat).apply([1.0, 0.0, 0.0])
@@ -660,6 +694,8 @@ class SfcPlanner:
 
             pre_pos = pos - normal * self._clear_anchor_gap(pos, -normal)
             post_pos = pos + normal * self._clear_anchor_gap(pos, normal)
+            pre_pos = pre_pos + self._lateral_obstacle_bias(pre_pos, right)
+            post_pos = post_pos + self._lateral_obstacle_bias(post_pos, right)
 
             flow_dir = pos - raw_path[-1].pos
 
