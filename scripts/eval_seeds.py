@@ -52,13 +52,17 @@ def _classify_failure(config, last_obs: dict, gates_passed: int, truncated: bool
         dists = np.linalg.norm(obst[:, :2] - pos[:2], axis=1)
         k_obst = int(np.argmin(dists))
         d_obst = float(dists[k_obst])
+    # Nearest gate over ALL gates (not just the target): the over-the-top U-turn
+    # flies back across earlier gates, so a non-target frame clip would otherwise
+    # be mislabelled "other".
     gates = np.asarray(last_obs["gates_pos"], dtype=np.float64)
-    tgt = gates_passed if 0 <= gates_passed < gates.shape[0] else -1
-    d_gate = float(np.linalg.norm(gates[tgt] - pos)) if tgt >= 0 else np.inf
+    gate_dists = np.linalg.norm(gates - pos[None, :], axis=1)
+    k_gate = int(np.argmin(gate_dists))
+    d_gate = float(gate_dists[k_gate])
     if d_obst < 0.25 and d_obst <= d_gate:
         return f"obst{k_obst}"
-    if d_gate < 0.5:
-        return f"gateframe{tgt}"
+    if d_gate < 0.55:
+        return f"gateframe{k_gate}"
     return "other"
 
 
