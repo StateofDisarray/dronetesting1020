@@ -53,9 +53,15 @@ def create_acados_model(parameters: dict) -> AcadosModel:
 
 
 def create_ocp_solver(
-    Tf: float, N: int, parameters: dict, verbose: bool = False
+    Tf: float, N: int, parameters: dict, verbose: bool = False, q_diag: "NDArray | None" = None
 ) -> tuple[AcadosOcpSolver, AcadosOcp]:
-    """Creates an acados Optimal Control Problem and Solver."""
+    """Creates an acados Optimal Control Problem and Solver.
+
+    ``q_diag`` optionally overrides the 12-element state-cost diagonal (default
+    keeps the example weights). The SFC+MPC tracker passes a stiffer lateral
+    (xy-position) weight so the MPC does not cut corners off the planned,
+    obstacle-clear reference.
+    """
     ocp = AcadosOcp()
 
     # Set model
@@ -107,6 +113,8 @@ def create_ocp_solver(
         ]
     )
 
+    if q_diag is not None:
+        Q = np.diag(np.asarray(q_diag, dtype=float))
     Q_e = Q.copy()
     ocp.cost.W = scipy.linalg.block_diag(Q, R)
     ocp.cost.W_e = Q_e
