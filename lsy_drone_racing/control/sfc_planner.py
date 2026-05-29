@@ -142,11 +142,11 @@ class SfcPlanner:
         self.pole_height = 1.52
 
         self.safety_margin = 0.15
-        # Inflate obstacle poles more than gate frames. A *global* 0.20 margin
-        # choked the gate openings (-> 50%); poles have no such constraint, so a
-        # larger pole-only margin buys tracking headroom against obst2/obst3 clips
-        # without narrowing the corridors through the gate frames.
-        self.pole_margin = 0.19
+        # Pole margin: a larger pole-only inflation (0.19) reduced obstacle clips
+        # but pushed the spline nearer the gate frames in the cramped gate-3
+        # region (more gateframe clips, net 54% < 58%). Keep it equal to the
+        # frame margin.
+        self.pole_margin = 0.15
 
         self.gates_pos = obs["gates_pos"].copy()
         self.gates_quat = obs["gates_quat"].copy()
