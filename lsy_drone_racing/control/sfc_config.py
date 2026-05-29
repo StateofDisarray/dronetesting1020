@@ -4,12 +4,12 @@ import numpy as np
 # SFC Attitude Controller Tuning Parameters
 # ==========================================
 
-# Position-controller gains (Newtons / metre). Stiffened in xy (1.044->1.4) to
-# cut the position lag that lets the drone catch a gate frame bar on entry
-# (cause=gateframe* clips); KD raised proportionally to keep damping.
-KP = np.array([1.4, 1.4, 1.5])
+# Position-controller gains (Newtons / metre). Stiffening these (tried 1.4/0.72)
+# regressed badly (34%): it causes overshoot/oscillation at gates and MORE frame
+# clips. Keep the well-tuned soft defaults.
+KP = np.array([1.044, 1.044, 1.25])
 KI = np.array([0.05, 0.05, 0.05])
-KD = np.array([0.72, 0.72, 0.45])
+KD = np.array([0.598, 0.598, 0.4])
 KI_RANGE = np.array([2.0, 2.0, 2.0])         # symmetric integrator clamp
 
 # Saturation / smoothing

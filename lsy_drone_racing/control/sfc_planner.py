@@ -142,6 +142,11 @@ class SfcPlanner:
         self.pole_height = 1.52
 
         self.safety_margin = 0.15
+        # Inflate obstacle poles more than gate frames. A *global* 0.20 margin
+        # choked the gate openings (-> 50%); poles have no such constraint, so a
+        # larger pole-only margin buys tracking headroom against obst2/obst3 clips
+        # without narrowing the corridors through the gate frames.
+        self.pole_margin = 0.19
 
         self.gates_pos = obs["gates_pos"].copy()
         self.gates_quat = obs["gates_quat"].copy()
@@ -340,13 +345,13 @@ class SfcPlanner:
         capsules = []
         margin = self.safety_margin
 
-        # Poles
+        # Poles (inflated by the larger pole-only margin)
         for p in self.obstacles_pos:
             capsules.append(
                 Capsule(
                     np.array([p[0], p[1], 0.0]),
                     np.array([p[0], p[1], self.pole_height]),
-                    self.pole_radius + margin,
+                    self.pole_radius + self.pole_margin,
                     False,
                 )
             )
