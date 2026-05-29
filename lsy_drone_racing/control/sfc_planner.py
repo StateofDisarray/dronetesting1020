@@ -754,36 +754,39 @@ class SfcPlanner:
 
                 # If the next gate is behind us (requires a sharp turn > 90 degrees)
                 if np.dot(exit_vector, normal) < -0.2:
-                    clearance_pos = post_pos + normal * 1.0
-                    raw_path.append(SkeletonPoint(clearance_pos, False, None, None, None))
-
                     # Calculate lateral vs longitudinal offset to the NEXT gate
                     # relative to the CURRENT gate's orientation.
                     dp = next_pos - pos
                     dist_lat = abs(float(np.dot(dp, right)))
                     dist_long = abs(float(np.dot(dp, normal)))
-                    
+
                     # If the lateral offset is larger, the next gate is placed side-by-side.
                     # If the longitudinal offset is larger, it is in-line (back-to-back).
                     is_next_to = dist_lat > dist_long
-                    
+
                     # Check if the current gate and the next gate face opposite directions.
                     faces_different = np.dot(normal, next_normal) < 0.0
 
                     # Determine the type of U-turn needed to exit the current gate
                     # and prepare for the next gate.
                     if faces_different and not is_next_to:
-                        # Over-the-top U-turn: Used for in-line (back-to-back) gates facing opposite ways.
-                        # The drone reverses direction by flying up and directly over the current gate.
+                        # Over-the-top U-turn: in-line back-to-back gates facing opposite
+                        # ways. Reverse by flying UP and over the current gate. The old
+                        # code first planted a clearance point a full 1 m along the exit
+                        # normal -- for gate 2 (normal -x) that is x~-2.5, in the arena
+                        # wall and past obstacle 2, sending the drone hard the wrong way
+                        # before going up. Go straight to the over-the-top apex instead.
                         exit_swing = pos + up * 1.2
+                        raw_path.append(SkeletonPoint(exit_swing, False, None, None, None))
                     else:
-                        # Lateral U-turn: Used for side-by-side gates.
-                        # The drone swings out laterally to the left or right to re-orient.
+                        # Lateral U-turn: side-by-side gates. The forward clearance point
+                        # is needed here so the lateral swing starts ahead of the gate.
+                        clearance_pos = post_pos + normal * 1.0
+                        raw_path.append(SkeletonPoint(clearance_pos, False, None, None, None))
                         dot_r = np.dot(exit_vector, right)
                         lat_dir = right if dot_r > 0 else -right
                         exit_swing = clearance_pos + lat_dir * 1.0 - normal * 0.7
-
-                    raw_path.append(SkeletonPoint(exit_swing, False, None, None, None))
+                        raw_path.append(SkeletonPoint(exit_swing, False, None, None, None))
                 else:
                     # Smarter intermediate waypoint handling for non-U-turn setups
                     next_pre_pos = next_pos - next_normal * self.anchor_gap
