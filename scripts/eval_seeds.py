@@ -29,16 +29,51 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _run_one(env, controller_cls, config, seed: int) -> tuple[int, float, bool]:
-    """Run a single seeded episode. Returns (gates_passed, flight_time, finished)."""
+def _classify_failure(config, last_obs: dict, gates_passed: int, truncated: bool) -> str:
+    """Tag *why* a run failed, using the drone's last pre-disable state.
+
+    On a crash the env warps the drone to [-1,-1,-1], so we classify against the
+    last observation captured *before* the terminating step. Returns a short tag
+    like ``obst3`` / ``gateframe3`` / ``ground`` / ``oob`` / ``timeout``.
+    """
+    if truncated:
+        return "timeout"
+    pos = np.asarray(last_obs["pos"], dtype=np.float64).reshape(3)
+    lim = config.env.track.safety_limits
+    low = np.asarray(lim.pos_limit_low, dtype=np.float64)
+    high = np.asarray(lim.pos_limit_high, dtype=np.float64)
+    if pos[2] < 0.05:
+        return "ground"
+    if np.any(pos < low - 0.05) or np.any(pos > high + 0.05):
+        return "oob"
+    obst = np.asarray(last_obs.get("obstacles_pos"), dtype=np.float64)
+    d_obst, k_obst = np.inf, -1
+    if obst.size:
+        dists = np.linalg.norm(obst[:, :2] - pos[:2], axis=1)
+        k_obst = int(np.argmin(dists))
+        d_obst = float(dists[k_obst])
+    gates = np.asarray(last_obs["gates_pos"], dtype=np.float64)
+    tgt = gates_passed if 0 <= gates_passed < gates.shape[0] else -1
+    d_gate = float(np.linalg.norm(gates[tgt] - pos)) if tgt >= 0 else np.inf
+    if d_obst < 0.25 and d_obst <= d_gate:
+        return f"obst{k_obst}"
+    if d_gate < 0.5:
+        return f"gateframe{tgt}"
+    return "other"
+
+
+def _run_one(env, controller_cls, config, seed: int) -> tuple[int, float, bool, str]:
+    """Run a seeded episode. Returns (gates_passed, flight_time, finished, cause)."""
     obs, info = env.reset(seed=seed)
     controller: Controller = controller_cls(obs, info, config)
     i = 0
     n_gates = len(config.env.track.gates)
     curr_time = 0.0
+    last_obs = obs
     while True:
         curr_time = i / config.env.freq
         action = controller.compute_control(obs, info)
+        last_obs = obs  # pre-step state (real position, before any crash-warp)
         obs, reward, terminated, truncated, info = env.step(action)
         finished_flag = controller.step_callback(action, obs, reward, terminated, truncated, info)
         if terminated or truncated or finished_flag:
@@ -50,7 +85,8 @@ def _run_one(env, controller_cls, config, seed: int) -> tuple[int, float, bool]:
     if gates_passed == -1:
         gates_passed = n_gates
     finished = gates_passed == n_gates
-    return gates_passed, curr_time, finished
+    cause = "" if finished else _classify_failure(config, last_obs, gates_passed, bool(truncated))
+    return gates_passed, curr_time, finished, cause
 
 
 def evaluate_seeds(
@@ -103,21 +139,24 @@ def evaluate_seeds(
     records = []
     n_gates = len(cfg.env.track.gates)
     for s in seed_list:
-        gates, t, finished = _run_one(env, controller_cls, cfg, s)
-        records.append({"seed": s, "gates": gates, "time": t, "finished": finished})
+        gates, t, finished, cause = _run_one(env, controller_cls, cfg, s)
+        records.append({"seed": s, "gates": gates, "time": t, "finished": finished, "cause": cause})
         flag = "OK " if finished else "FAIL"
-        logger.info(f"[{flag}] seed={s:>3}  gates={gates}/{n_gates}  time={t:5.2f}s")
+        tag = "" if finished else f"  cause={cause}"
+        logger.info(f"[{flag}] seed={s:>3}  gates={gates}/{n_gates}  time={t:5.2f}s{tag}")
     env.close()
 
     n_total = len(records)
     n_ok = sum(r["finished"] for r in records)
     ok_times = [r["time"] for r in records if r["finished"]]
     fail_seeds = [r["seed"] for r in records if not r["finished"]]
-    # Distribution of gate index at which non-finished runs stopped.
+    # Distribution of gate index at which non-finished runs stopped, and of cause.
     fail_at = {}
+    cause_hist = {}
     for r in records:
         if not r["finished"]:
             fail_at[r["gates"]] = fail_at.get(r["gates"], 0) + 1
+            cause_hist[r["cause"]] = cause_hist.get(r["cause"], 0) + 1
 
     summary = {
         "n": n_total,
@@ -125,15 +164,17 @@ def evaluate_seeds(
         "mean_time_ok": float(np.mean(ok_times)) if ok_times else None,
         "fail_seeds": fail_seeds,
         "fail_at_gate": dict(sorted(fail_at.items())),
+        "fail_cause": dict(sorted(cause_hist.items(), key=lambda kv: -kv[1])),
         "records": records,
     }
     logger.info(
-        "SUMMARY: success=%d/%d (%.0f%%)  mean_ok_time=%s  fail_at_gate=%s  fail_seeds=%s",
+        "SUMMARY: success=%d/%d (%.0f%%)  mean_ok_time=%s  fail_at_gate=%s  cause=%s  fail_seeds=%s",
         n_ok,
         n_total,
         100.0 * summary["success_rate"],
         f"{summary['mean_time_ok']:.2f}s" if summary["mean_time_ok"] is not None else "n/a",
         summary["fail_at_gate"],
+        summary["fail_cause"],
         fail_seeds,
     )
     return summary
