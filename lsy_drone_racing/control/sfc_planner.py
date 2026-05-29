@@ -594,6 +594,33 @@ class SfcPlanner:
 
         return P.value
 
+    def _clear_anchor_gap(self, gate_pos: NDArray, direction: NDArray) -> float:
+        """Anchor-gap distance along ``direction``, shortened to clear obstacles.
+
+        The default pre/post anchors sit ``anchor_gap`` (0.5 m) out along the
+        gate normal. For the tight last gate this lands the entry anchor right
+        on top of an obstacle pole (gate 3 at [0,-0.75] + 0.5 m back == obstacle
+        3 at [-0.5,-0.75]), so the skeleton routes the drone straight through
+        the pole. Shrink the gap (down to a floor) until the anchor clears every
+        obstacle's inflated radius, letting the corridor optimiser bend the
+        spline around the pole instead of through it.
+        """
+        base = float(self.anchor_gap)
+        obst = self.obstacles_pos
+        if obst is None or len(obst) == 0:
+            return base
+        # Clear the inflated pole plus the drone half-width, with a little slack.
+        clearance = self.pole_radius + self.safety_margin + 0.10
+        floor = 0.25
+        gap = base
+        while gap > floor:
+            anchor_xy = (gate_pos + direction * gap)[:2]
+            d_min = float(np.min(np.linalg.norm(np.asarray(obst)[:, :2] - anchor_xy, axis=1)))
+            if d_min >= clearance:
+                break
+            gap -= 0.05
+        return max(gap, floor)
+
     def _calculate_anchors(self, current_pos: NDArray) -> list[SkeletonPoint]:
         gate_normals = R.from_quat(self.gates_quat).apply([1.0, 0.0, 0.0])
         raw_path = [SkeletonPoint(current_pos, False, None, None, None)]
@@ -631,8 +658,8 @@ class SfcPlanner:
             right = rot.apply([0, 1, 0])
             up = rot.apply([0, 0, 1])
 
-            pre_pos = pos - normal * self.anchor_gap
-            post_pos = pos + normal * self.anchor_gap
+            pre_pos = pos - normal * self._clear_anchor_gap(pos, -normal)
+            post_pos = pos + normal * self._clear_anchor_gap(pos, normal)
 
             flow_dir = pos - raw_path[-1].pos
 
