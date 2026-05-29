@@ -141,7 +141,7 @@ class SfcPlanner:
         self.pole_radius = 0.03 / 2.0
         self.pole_height = 1.52
 
-        self.safety_margin = 0.20
+        self.safety_margin = 0.15
 
         self.gates_pos = obs["gates_pos"].copy()
         self.gates_quat = obs["gates_quat"].copy()
