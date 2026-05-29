@@ -133,13 +133,13 @@ class MincoController(Controller):
     # Target cruise speed at intermediate gate waypoints. Quintic segments
     # interpolate smoothly between the drone's current vel and this value;
     # higher is faster but also triggers feasibility rescaling sooner.
-    V_NOMINAL: float = 0.75
+    V_NOMINAL: float = 1.2
 
     # Feasibility caps. cf21B_500 can do ~3 m/s cruise and ~15 m/s² peak
     # acceleration under Mellinger cascade; stay conservative so the
     # cascade doesn't saturate during tracking.
-    V_MAX: float = 2.5
-    A_MAX: float = 8.0
+    V_MAX: float = 3.0
+    A_MAX: float = 10.0
 
     # Minimum time between geometry-triggered replans. The controller no
     # longer rebuilds the trajectory on a blind cadence; replanning without
@@ -151,7 +151,7 @@ class MincoController(Controller):
     LEAD_TIME: float = 0.20
     LOOKAHEAD_DIST: float = 0.17
     FEEDFORWARD_SCALE: float = 0.32
-    PROGRESS_RATE_LIMIT: float = 1.08
+    PROGRESS_RATE_LIMIT: float = 1.4
     TRACK_CHANGE_EPS: float = 1e-4
 
     # Gate waypoint layout. Each gate contributes a pre-knot + centre +
