@@ -77,7 +77,13 @@ def evaluate_seeds(
     controller_cls = load_controller(controller_path)
 
     if seeds is not None:
-        seed_list = [int(s) for s in str(seeds).split(",") if str(s).strip() != ""]
+        # ``fire`` turns "4,8,10" into a tuple; a single value arrives as int.
+        if isinstance(seeds, (list, tuple)):
+            seed_list = [int(s) for s in seeds]
+        elif isinstance(seeds, int):
+            seed_list = [seeds]
+        else:
+            seed_list = [int(s) for s in str(seeds).split(",") if str(s).strip() != ""]
     else:
         seed_list = list(range(int(n)))
 
