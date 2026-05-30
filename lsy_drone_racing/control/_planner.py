@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -54,6 +53,7 @@ class PlannerConfig:
             if np.isfinite(v) and v > 0:
                 return float(v)
         return self.v_cruise
+
     # Time-optimal refinement caps (0 to disable). The heuristic refiner
     # iterates per-segment toward target utilization; the slsqp refiner
     # solves a small NLP (min sum(seg_t) s.t. peak vel/accel caps).
@@ -101,7 +101,7 @@ def build_plan(
     remaining_quat = gates_quat[target_gate:]
     wps = _build_waypoints(
         start_pos, remaining_pos, remaining_quat, obstacles_pos, cfg, target_gate=target_gate
-    ) 
+    )
     if target_gate > 0 and target_gate < len(gates_pos) and not cfg.skip_clearance:
         prev_gp = gates_pos[target_gate - 1]
         if float(np.linalg.norm(start_pos - prev_gp)) < 0.6:
@@ -241,14 +241,14 @@ def _build_waypoints(
         rot = R.from_quat(gq).as_matrix()
         x_axis, y_axis = rot[:, 0], rot[:, 1]
         approach_raw = gp - d_pre_gi * x_axis
-        exit_raw = gp + d_post_gi * x_axis 
+        exit_raw = gp + d_post_gi * x_axis
         prev_wp = wps[-1]
         bias = float(np.dot((prev_wp - approach_raw)[:2], y_axis[:2]))
         bias_sign = np.sign(bias) if abs(bias) > 1e-3 else 0.0
         approach = _nudge_lateral(
             approach_raw, y_axis, obstacles_pos, cfg.r_obs, bias_sign=bias_sign
         )
-        exit_ = _nudge_lateral(exit_raw, y_axis, obstacles_pos, cfg.r_obs) 
+        exit_ = _nudge_lateral(exit_raw, y_axis, obstacles_pos, cfg.r_obs)
         gap_to_approach = float(np.linalg.norm((approach - prev_wp)[:2]))
         lateral_off = float(abs(np.dot((prev_wp - approach)[:2], y_axis[:2])))
         if gap_to_approach > 0.55 and lateral_off > 0.12:
@@ -259,13 +259,13 @@ def _build_waypoints(
                 cfg.r_obs,
                 bias_sign=bias_sign,
             )
-            wps.append(far_approach) 
+            wps.append(far_approach)
         nudge_dist = float(np.linalg.norm((approach - approach_raw)[:2]))
         if nudge_dist > 0.05:
             near_gate = gp - 0.15 * x_axis
             wps.extend([approach, near_gate, gp.copy(), exit_])
         else:
-            wps.extend([approach, gp.copy(), exit_]) 
+            wps.extend([approach, gp.copy(), exit_])
         if gi + 1 < n_gates and not cfg.skip_clearance:
             next_gp = gates_pos[gi + 1]
             next_rot = R.from_quat(gates_quat[gi + 1]).as_matrix()
@@ -356,7 +356,7 @@ def _nudge_lateral(
     obstacles_pos: NDArray[np.floating],
     r_obs: float,
     bias_sign: float = 0.0,
-) -> NDArray[np.floating]: 
+) -> NDArray[np.floating]:
     y2 = lateral[:2]
     yn = float(np.linalg.norm(y2))
     if yn < 1e-6:
@@ -595,7 +595,7 @@ def _time_optimal_refine(
     start_vel: NDArray[np.floating],
     seg_t: NDArray[np.floating],
     cfg: PlannerConfig,
-) -> NDArray[np.floating]: 
+) -> NDArray[np.floating]:
     seg_t = np.asarray(seg_t, dtype=np.float64).copy()
     bc = ((1, np.asarray(start_vel, dtype=np.float64)), (1, np.zeros(3)))
     for _ in range(8):

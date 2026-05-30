@@ -77,7 +77,7 @@ class QualificationTuning:
 
     @property
     def leg_start_times(self) -> tuple[float, ...]:
-        """Return the cumulative start time of each leg derived from the leg durations."""
+        """Return the cumulative start time of each leg."""
         starts = [0.0]
         for t in self.leg_times[:-1]:
             starts.append(starts[-1] + float(t))

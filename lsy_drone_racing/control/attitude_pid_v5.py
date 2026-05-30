@@ -10,19 +10,19 @@ from drone_models.core import load_params
 from scipy.spatial.transform import Rotation as R
 
 from lsy_drone_racing.control import Controller
-from lsy_drone_racing.control.attitude_pid_v4.attitude import tracking_command
-from lsy_drone_racing.control.attitude_pid_v4.cascade_pid import PositionPid
-from lsy_drone_racing.control.attitude_pid_v4.geometry import (
+from lsy_drone_racing.control.attitude_pid_v5.attitude import tracking_command
+from lsy_drone_racing.control.attitude_pid_v5.cascade_pid import PositionPid
+from lsy_drone_racing.control.attitude_pid_v5.geometry import (
     DEFAULT_GATE_POS,
     DEFAULT_GATE_RPY,
     DEFAULT_OBSTACLES,
     normalize_gate_index,
 )
-from lsy_drone_racing.control.attitude_pid_v4.trajectory import (
+from lsy_drone_racing.control.attitude_pid_v5.trajectory import (
     build_reference_curve,
     load_route_overrides,
 )
-from lsy_drone_racing.control.attitude_pid_v4.tuning import QualificationTuning, gate1_offset_tuning
+from lsy_drone_racing.control.attitude_pid_v5.tuning import QualificationTuning, gate1_offset_tuning
 
 if TYPE_CHECKING:
     from crazyflow import Sim

@@ -59,9 +59,7 @@ def _print(summary: dict) -> None:
         f"min={summary['min_time_success']:.3f}s "
         f"max={summary['max_time_success']:.3f}s"
     )
-    formatted = ", ".join(
-        f"{t:.2f}" if t is not None else "FAIL" for t in summary["times"]
-    )
+    formatted = ", ".join(f"{t:.2f}" if t is not None else "FAIL" for t in summary["times"])
     print(f"per-run times  : [{formatted}]")
 
 
@@ -89,8 +87,12 @@ def main(
         a, b = controllers
         ra, rb = results[a], results[b]
         print("\n=== head-to-head ===")
-        print(f"{a:30s} mean={ra['mean_time_success']:.3f}s  success={ra['success_rate']*100:.0f}%")
-        print(f"{b:30s} mean={rb['mean_time_success']:.3f}s  success={rb['success_rate']*100:.0f}%")
+        print(
+            f"{a:30s} mean={ra['mean_time_success']:.3f}s  success={ra['success_rate'] * 100:.0f}%"
+        )
+        print(
+            f"{b:30s} mean={rb['mean_time_success']:.3f}s  success={rb['success_rate'] * 100:.0f}%"
+        )
         if np.isfinite(ra["mean_time_success"]) and np.isfinite(rb["mean_time_success"]):
             delta = rb["mean_time_success"] - ra["mean_time_success"]
             faster = a if delta > 0 else b
