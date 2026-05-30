@@ -10,23 +10,19 @@ from drone_models.core import load_params
 from scipy.spatial.transform import Rotation as R
 
 from lsy_drone_racing.control import Controller
-from lsy_drone_racing.control.attitude_pid_v5.cascade_pid import PositionPid
 from lsy_drone_racing.control.attitude_pid_v5.attitude import tracking_command
-from lsy_drone_racing.control.attitude_pid_v5.tuning import (
-    QualificationTuning,
-    gate1_offset_tuning,
-)
-from lsy_drone_racing.control.attitude_pid_v5.trajectory import (
-    build_reference_curve,
-    load_route_overrides,
-)
+from lsy_drone_racing.control.attitude_pid_v5.cascade_pid import PositionPid
 from lsy_drone_racing.control.attitude_pid_v5.geometry import (
     DEFAULT_GATE_POS,
     DEFAULT_GATE_RPY,
     DEFAULT_OBSTACLES,
     normalize_gate_index,
 )
-from lsy_drone_racing.control.attitude_pid_v5.trajectory import SECTOR_OBSTACLE_INDEX
+from lsy_drone_racing.control.attitude_pid_v5.trajectory import (
+    build_reference_curve,
+    load_route_overrides,
+)
+from lsy_drone_racing.control.attitude_pid_v5.tuning import QualificationTuning, gate1_offset_tuning
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -79,9 +75,7 @@ class QualificationController(Controller):
         self._reference_t_start = 0.0
         self._planned_gate_pos = np.asarray(DEFAULT_GATE_POS, dtype=np.float64)
         self._planned_gate_rpy = np.asarray(DEFAULT_GATE_RPY, dtype=np.float64)
-        self._last_action = np.array(
-            [0.0, 0.0, 0.0, self._mass * self._gravity], dtype=np.float32
-        )
+        self._last_action = np.array([0.0, 0.0, 0.0, self._mass * self._gravity], dtype=np.float32)
 
         # PID with section-0 gains; will be swapped per sector.
         self._pid = PositionPid(self._tuning.section_gains[0])
@@ -223,9 +217,7 @@ class QualificationController(Controller):
         self._reference_t_start = 0.0
         self._pid.reset()
         self._pid.set_gains(self._tuning.section_gains[0])
-        self._last_action = np.array(
-            [0.0, 0.0, 0.0, self._mass * self._gravity], dtype=np.float32
-        )
+        self._last_action = np.array([0.0, 0.0, 0.0, self._mass * self._gravity], dtype=np.float32)
 
     def render_callback(self, sim) -> None:
         if self._reference is None:

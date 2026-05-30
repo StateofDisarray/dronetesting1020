@@ -98,10 +98,7 @@ class PositionPid:
         )
 
     def update(
-        self,
-        pos_error: "NDArray[np.floating]",
-        vel_error: "NDArray[np.floating]",
-        dt: float,
+        self, pos_error: "NDArray[np.floating]", vel_error: "NDArray[np.floating]", dt: float
     ) -> "NDArray[np.floating]":
         g = self.gains
         dt = max(float(dt), 1e-9)
@@ -133,15 +130,13 @@ class PositionPid:
             self._first_sample = False
         else:
             raw_deriv = (velocity_error - self._prev_vel_error) / dt
-        self._filtered_derivative = (
-            self._filtered_derivative + alpha * (raw_deriv - self._filtered_derivative)
+        self._filtered_derivative = self._filtered_derivative + alpha * (
+            raw_deriv - self._filtered_derivative
         )
         self._prev_vel_error = velocity_error.copy()
 
         proposed_inner_int = np.clip(
-            self.inner_integral + velocity_error * dt,
-            -g.inner_i_clamp,
-            g.inner_i_clamp,
+            self.inner_integral + velocity_error * dt, -g.inner_i_clamp, g.inner_i_clamp
         )
         cmd_raw = (
             g.inner_kp * velocity_error

@@ -11,12 +11,10 @@ if TYPE_CHECKING:
     from numpy.typing import NDArray
 
 DEFAULT_GATE_POS = np.array(
-    [[0.5, 0.25, 0.7], [1.05, 0.75, 1.2], [-1.0, -0.25, 0.7], [0.0, -0.75, 1.2]],
-    dtype=np.float64,
+    [[0.5, 0.25, 0.7], [1.05, 0.75, 1.2], [-1.0, -0.25, 0.7], [0.0, -0.75, 1.2]], dtype=np.float64
 )
 DEFAULT_GATE_RPY = np.array(
-    [[0.0, 0.0, -0.78], [0.0, 0.0, 2.35], [0.0, 0.0, 3.14], [0.0, 0.0, 0.0]],
-    dtype=np.float64,
+    [[0.0, 0.0, -0.78], [0.0, 0.0, 2.35], [0.0, 0.0, 3.14], [0.0, 0.0, 0.0]], dtype=np.float64
 )
 DEFAULT_OBSTACLES = np.array(
     [[0.0, 0.75, 1.55], [1.0, 0.25, 1.55], [-1.5, -0.25, 1.55], [-0.5, -0.75, 1.55]],
@@ -62,11 +60,7 @@ def gate_axis_points(
 def body_z_from_quat(quat: NDArray[np.floating]) -> NDArray[np.floating]:
     qx, qy, qz, qw = (float(quat[0]), float(quat[1]), float(quat[2]), float(quat[3]))
     return np.array(
-        [
-            2.0 * (qx * qz + qw * qy),
-            2.0 * (qy * qz - qw * qx),
-            1.0 - 2.0 * (qx * qx + qy * qy),
-        ],
+        [2.0 * (qx * qz + qw * qy), 2.0 * (qy * qz - qw * qx), 1.0 - 2.0 * (qx * qx + qy * qy)],
         dtype=np.float64,
     )
 

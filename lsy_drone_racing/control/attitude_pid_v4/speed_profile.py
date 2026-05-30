@@ -22,10 +22,7 @@ _MIN_MULT = 1e-3
 
 
 def schedule_knots(
-    t_start: float,
-    t_end: float,
-    waypoints: NDArray[np.floating],
-    profile: SectorSpeedProfile,
+    t_start: float, t_end: float, waypoints: NDArray[np.floating], profile: SectorSpeedProfile
 ) -> NDArray[np.floating]:
     """Allocate sector duration nonuniformly across waypoint intervals."""
     wps = np.asarray(waypoints, dtype=np.float64)

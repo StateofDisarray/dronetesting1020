@@ -101,7 +101,7 @@ def _build_ocp(
     Vx_e[0:nx, 0:nx] = np.eye(nx)
     ocp.cost.Vx_e = Vx_e
     ocp.cost.yref = np.zeros((ny,))
-    ocp.cost.yref_e = np.zeros((ny_e,)) 
+    ocp.cost.yref_e = np.zeros((ny_e,))
     ocp.constraints.lbx = np.array([-1.20, -1.20, -1.5])
     ocp.constraints.ubx = np.array([1.20, 1.20, 1.5])
     ocp.constraints.idxbx = np.array([3, 4, 5])
@@ -109,7 +109,7 @@ def _build_ocp(
     ocp.constraints.ubu = np.array([0.80, 0.80, 1.0, parameters["thrust_max"] * 4])
     ocp.constraints.idxbu = np.array([0, 1, 2, 3])
     ocp.constraints.x0 = np.zeros((nx,))
- 
+
     p_drone_xy = X[0:2]
     p_drone_xyz = X[0:3]
     dist_sq_terms = []
@@ -283,7 +283,7 @@ class GateAwareFastV3(Controller):
         self._plan_spline_ticks = n_samples
         self._tick = 0
 
-    def _current_gate_wings(self, obs: dict[str, NDArray[np.floating]]) -> NDArray[np.floating]: 
+    def _current_gate_wings(self, obs: dict[str, NDArray[np.floating]]) -> NDArray[np.floating]:
         tgt = int(obs["target_gate"])
         if tgt < 0 or tgt >= len(obs["gates_pos"]):
             return np.full((self.N_WINGS, 3), 100.0)
@@ -297,7 +297,7 @@ class GateAwareFastV3(Controller):
 
     def _active_obstacles_xy(
         self, obs: dict[str, NDArray[np.floating]], horizon_xy: NDArray[np.floating]
-    ) -> NDArray[np.floating]: 
+    ) -> NDArray[np.floating]:
         all_xy = np.asarray(obs["obstacles_pos"], dtype=np.float64)[: self.N_OBSTACLES, :2]
         out = np.full((self.N_OBSTACLES, 2), 100.0, dtype=np.float64)
         for k, oxy in enumerate(all_xy):
@@ -320,8 +320,7 @@ class GateAwareFastV3(Controller):
         if not self.USE_MPC:
             ref_pos = self._pos_samples[i]
             self._pdi_i_err = np.clip(
-                self._pdi_i_err
-                + (ref_pos - np.asarray(obs["pos"], dtype=np.float64)) * self._dt,
+                self._pdi_i_err + (ref_pos - np.asarray(obs["pos"], dtype=np.float64)) * self._dt,
                 -self.PDI_I_CLAMP,
                 self.PDI_I_CLAMP,
             )
@@ -331,9 +330,11 @@ class GateAwareFastV3(Controller):
         drpy = ang_vel2rpy_rates(obs["quat"], obs["ang_vel"])
         x0 = np.concatenate((obs["pos"], rpy, obs["vel"], drpy))
         if self._nx > 12:
-            hover_per = float(self.drone_params["mass"]) * float(
-                -self.drone_params["gravity_vec"][-1]
-            ) / max(self._nx - 12, 1)
+            hover_per = (
+                float(self.drone_params["mass"])
+                * float(-self.drone_params["gravity_vec"][-1])
+                / max(self._nx - 12, 1)
+            )
             x0 = np.concatenate((x0, np.full(self._nx - 12, hover_per)))
         self._acados_ocp_solver.set(0, "lbx", x0)
         self._acados_ocp_solver.set(0, "ubx", x0)
@@ -372,9 +373,7 @@ class GateAwareFastV3(Controller):
         u0 = self._acados_ocp_solver.get(0, "u")
         return np.asarray(u0, dtype=np.float32)
 
-    def _pdi_track(
-        self, obs: dict[str, NDArray[np.floating]], i: int
-    ) -> NDArray[np.floating]:
+    def _pdi_track(self, obs: dict[str, NDArray[np.floating]], i: int) -> NDArray[np.floating]:
         ref_pos = self._pos_samples[i]
         ref_vel = self._vel_samples[i]
         ref_acc = self._acc_samples[i].copy()

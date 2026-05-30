@@ -54,9 +54,15 @@ def _build_constrained_solver(
     ocp.cost.cost_type_e = "LINEAR_LS"
     ocp.cost.W = scipy.linalg.block_diag(Q, Rm)
     ocp.cost.W_e = Q.copy()
-    Vx = np.zeros((ny, nx)); Vx[0:nx, 0:nx] = np.eye(nx); ocp.cost.Vx = Vx
-    Vu = np.zeros((ny, nu)); Vu[nx:nx + nu, :] = np.eye(nu); ocp.cost.Vu = Vu
-    Vx_e = np.zeros((ny_e, nx)); Vx_e[0:nx, 0:nx] = np.eye(nx); ocp.cost.Vx_e = Vx_e
+    Vx = np.zeros((ny, nx))
+    Vx[0:nx, 0:nx] = np.eye(nx)
+    ocp.cost.Vx = Vx
+    Vu = np.zeros((ny, nu))
+    Vu[nx : nx + nu, :] = np.eye(nu)
+    ocp.cost.Vu = Vu
+    Vx_e = np.zeros((ny_e, nx))
+    Vx_e[0:nx, 0:nx] = np.eye(nx)
+    ocp.cost.Vx_e = Vx_e
     ocp.cost.yref = np.zeros((ny,))
     ocp.cost.yref_e = np.zeros((ny_e,))
 
@@ -67,7 +73,7 @@ def _build_constrained_solver(
     px, py = ocp.model.x[0], ocp.model.x[1]
     h = ca.vertcat(*[(px - p[2 * i]) ** 2 + (py - p[2 * i + 1]) ** 2 for i in range(n_obs)])
     ocp.model.con_h_expr = h
-    ocp.constraints.lh = np.full(n_obs, r_safe ** 2)
+    ocp.constraints.lh = np.full(n_obs, r_safe**2)
     ocp.constraints.uh = np.full(n_obs, 1e9)
     ocp.constraints.idxsh = np.arange(n_obs)
     ocp.cost.zl = 1e3 * np.ones(n_obs)

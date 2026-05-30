@@ -10,9 +10,9 @@ from typing import TYPE_CHECKING, Sequence
 import numpy as np
 from scipy.interpolate import CubicSpline, PchipInterpolator
 
-from .tuning import RouteTuning
-from .speed_profile import SectorSpeedProfile, schedule_knots
 from .geometry import DEFAULT_OBSTACLES, gate_axis_points, gate_x_axis, gate_y_axis
+from .speed_profile import SectorSpeedProfile, schedule_knots
+from .tuning import RouteTuning
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -44,7 +44,9 @@ def _signed_y_axis_away(
     source_pos: "NDArray[np.floating]",
 ) -> "NDArray[np.floating]":
     """Return gate-y axis (horizontal) signed so it points away from ``source_pos``."""
-    return _signed_y_axis_toward(gate_pos, gate_rpy, 2.0 * np.asarray(gate_pos) - np.asarray(source_pos))
+    return _signed_y_axis_toward(
+        gate_pos, gate_rpy, 2.0 * np.asarray(gate_pos) - np.asarray(source_pos)
+    )
 
 
 def build_route_waypoints(
@@ -90,9 +92,8 @@ def build_route_waypoints(
     elif route_idx == 2:
         gate1_x = gate_x_axis(gr[1])
         if tuning.gate1_offset_active:
-            shift = (
-                tuning.gate1_left_offset_toward_gate0
-                * _signed_y_axis_toward(gp[1], gr[1], gp[0])
+            shift = tuning.gate1_left_offset_toward_gate0 * _signed_y_axis_toward(
+                gp[1], gr[1], gp[0]
             )
             sector_start = gp[1] + tuning.gate1_exit_offset * gate1_x + shift
         else:
@@ -175,7 +176,9 @@ def _apply_override(
     return np.column_stack([override_xy, z_interp])
 
 
-def _build_interpolator(route_idx: int, knots: "NDArray[np.floating]", waypoints: "NDArray[np.floating]"):
+def _build_interpolator(
+    route_idx: int, knots: "NDArray[np.floating]", waypoints: "NDArray[np.floating]"
+):
     if route_idx <= 1:
         return CubicSpline(knots, waypoints, bc_type="natural")
     return PchipInterpolator(knots, waypoints)
