@@ -77,6 +77,7 @@ class QualificationTuning:
 
     @property
     def leg_start_times(self) -> tuple[float, ...]:
+        """Return the cumulative start time of each leg derived from the leg durations."""
         starts = [0.0]
         for t in self.leg_times[:-1]:
             starts.append(starts[-1] + float(t))
@@ -144,6 +145,7 @@ def _build_section_gains() -> tuple[PositionPidGains, ...]:
 
 
 def gate1_offset_tuning() -> QualificationTuning:
+    """Build the qualification tuning preset with a gate-1 offset adjustment."""
     leg_times = tuple(
         _NOMINAL_LEG_TIMES[i] * _GLOBAL_TIME_SCALE * _LEG_TIME_SCALES[i] for i in range(4)
     )

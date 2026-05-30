@@ -13,6 +13,8 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True)
 class SectorSpeedProfile:
+    """Relative speed multipliers at the start, middle, and end of a sector."""
+
     start: float
     mid: float
     end: float

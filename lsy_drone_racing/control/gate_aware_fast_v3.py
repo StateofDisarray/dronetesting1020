@@ -1,3 +1,5 @@
+"""Gate-aware MPC attitude controller (fast v3)."""
+
 from __future__ import annotations
 
 import csv
@@ -158,6 +160,8 @@ def _build_ocp(
 
 
 class GateAwareFastV3(Controller):
+    """Gate-aware MPC controller that replans around gates and obstacles."""
+
     _run_counter = 0
 
     N = 30
@@ -412,6 +416,7 @@ class GateAwareFastV3(Controller):
         truncated: bool,
         info: dict,
     ) -> bool:
+        """Update tick counters and cached flight state after each step."""
         self._tick += 1
         self._flight_tick += 1
         target_gate = int(obs["target_gate"])

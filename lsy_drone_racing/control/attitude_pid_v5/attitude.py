@@ -6,11 +6,14 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from .cascade_pid import PositionPid
 from .geometry import body_z_from_quat, euler_from_matrix
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from numpy.typing import NDArray
+
+    from .cascade_pid import PositionPid
 
 _LATERAL_ACC_LIMIT = 16.0
 _FF_SCALE = 0.75
@@ -28,7 +31,7 @@ _prev_yaw = 0.0
 
 
 def tracking_command(
-    reference,
+    reference: "Callable[..., NDArray[np.floating]]",
     pos: "NDArray[np.floating]",
     vel: "NDArray[np.floating]",
     quat: "NDArray[np.floating]",

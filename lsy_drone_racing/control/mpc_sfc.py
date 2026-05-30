@@ -112,6 +112,7 @@ class SfcMpcController(Controller):
     """SFC reference + acados NMPC tracker with obstacle constraints."""
 
     def __init__(self, obs: dict, info: dict, config: dict) -> None:
+        """Initialize the SFC planner, acados NMPC solver, and takeoff state."""
         super().__init__(obs, info, config)
         self._freq = float(config.env.freq)
         self._dt = 1.0 / self._freq
@@ -157,6 +158,7 @@ class SfcMpcController(Controller):
         return best_t
 
     def compute_control(self, obs: dict, info: dict | None = None) -> "NDArray[np.floating]":
+        """Compute the attitude command via takeoff handling and the NMPC solve."""
         if self.planner.update(obs):
             self._t = 0.0
 
@@ -215,13 +217,24 @@ class SfcMpcController(Controller):
             self._finished = True
         return u0.astype(np.float32)
 
-    def step_callback(self, action, obs, reward, terminated, truncated, info) -> bool:
+    def step_callback(
+        self,
+        action: "NDArray[np.floating]",
+        obs: dict,
+        reward: float,
+        terminated: bool,
+        truncated: bool,
+        info: dict,
+    ) -> bool:
+        """Report whether the controller has finished the run."""
         return self._finished
 
     def episode_callback(self) -> None:
+        """Reset the controller at the end of an episode."""
         self.episode_reset()
 
     def episode_reset(self) -> None:
+        """Reset the planner, takeoff state, and cached command for a new episode."""
         self.planner.episode_reset()
         self._airborne = False
         self._t = 0.0

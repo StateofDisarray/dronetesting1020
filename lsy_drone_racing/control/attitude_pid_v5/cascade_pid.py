@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from numpy.typing import NDArray
 
 
-def _vec3(v) -> "NDArray[np.floating]":
+def _vec3(v: NDArray[np.floating] | list[float]) -> "NDArray[np.floating]":
     a = np.asarray(v, dtype=np.float64).reshape(-1)
     if a.size != 3:
         raise ValueError(f"expected length-3 vector, got size {a.size}")
@@ -26,6 +26,8 @@ _DEFAULT_DERIVATIVE_TAU = np.array([0.045, 0.045, 0.060], dtype=np.float64)
 
 @dataclass
 class PositionPidGains:
+    """Gain set for the cascaded outer-position / inner-velocity PID loops."""
+
     outer_kp: "NDArray[np.floating]"
     outer_ki: "NDArray[np.floating]"
     outer_i_clamp: "NDArray[np.floating]"
@@ -40,15 +42,16 @@ class PositionPidGains:
     @classmethod
     def from_xyz(
         cls,
-        kp,
-        ki,
-        kd,
-        i_clamp,
-        outer_clamp=_DEFAULT_OUTER_CLAMP,
-        inner_i_clamp=_DEFAULT_INNER_I_CLAMP,
-        output_clamp=_DEFAULT_OUTPUT_CLAMP,
-        derivative_tau=_DEFAULT_DERIVATIVE_TAU,
+        kp: NDArray[np.floating],
+        ki: NDArray[np.floating],
+        kd: NDArray[np.floating],
+        i_clamp: NDArray[np.floating],
+        outer_clamp: NDArray[np.floating] = _DEFAULT_OUTER_CLAMP,
+        inner_i_clamp: NDArray[np.floating] = _DEFAULT_INNER_I_CLAMP,
+        output_clamp: NDArray[np.floating] = _DEFAULT_OUTPUT_CLAMP,
+        derivative_tau: NDArray[np.floating] = _DEFAULT_DERIVATIVE_TAU,
     ) -> "PositionPidGains":
+        """Build a gain set from per-axis position gains and derived inner gains."""
         kp = _vec3(kp)
         ki = _vec3(ki)
         kd = _vec3(kd)
@@ -73,6 +76,8 @@ class PositionPidGains:
 
 @dataclass
 class PositionPid:
+    """Cascaded position/velocity PID controller with anti-windup and filtered derivative."""
+
     gains: PositionPidGains
     outer_integral: "NDArray[np.floating]" = field(default_factory=lambda: np.zeros(3))
     inner_integral: "NDArray[np.floating]" = field(default_factory=lambda: np.zeros(3))
@@ -81,6 +86,7 @@ class PositionPid:
     _first_sample: bool = True
 
     def reset(self) -> None:
+        """Reset integrators, filtered derivative, and the first-sample flag."""
         self.outer_integral[:] = 0.0
         self.inner_integral[:] = 0.0
         self._filtered_derivative[:] = 0.0
@@ -88,6 +94,7 @@ class PositionPid:
         self._first_sample = True
 
     def set_gains(self, gains: PositionPidGains) -> None:
+        """Swap in new gains while clipping existing integrators to the new clamps."""
         # Preserve integrators but clip to new clamps.
         self.gains = gains
         self.outer_integral = np.clip(
@@ -100,6 +107,7 @@ class PositionPid:
     def update(
         self, pos_error: "NDArray[np.floating]", vel_error: "NDArray[np.floating]", dt: float
     ) -> "NDArray[np.floating]":
+        """Run one cascaded PID step and return the clamped acceleration command."""
         g = self.gains
         dt = max(float(dt), 1e-9)
         pe = _vec3(pos_error)

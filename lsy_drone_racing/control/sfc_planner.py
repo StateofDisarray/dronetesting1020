@@ -8,15 +8,17 @@ builder, and B-spline optimization. Consumed by both `sfc_controller.py`
 from __future__ import annotations
 
 import logging
-from typing import NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
 import cvxpy as cp
 import numpy as np
-from numpy.typing import NDArray
 from scipy.interpolate import BSpline, CubicSpline
 from scipy.spatial.transform import Rotation as R
 
 import lsy_drone_racing.control.sfc_config as cfg
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
 
 logger = logging.getLogger(__name__)
 
@@ -128,6 +130,7 @@ class SfcPlanner:
     N_TOPP_SAMPLES = cfg.N_TOPP_SAMPLES
 
     def __init__(self, obs: dict[str, NDArray], freq: int) -> None:
+        """Initialize the planner from the initial observation and control frequency."""
         self._freq = freq
         self.anchor_gap = 0.5
         self.base_speed = 1.0
@@ -220,14 +223,17 @@ class SfcPlanner:
 
     @property
     def t_total(self) -> float:
+        """Total duration of the planned trajectory in seconds."""
         return self._t_total
 
     @property
     def des_pos_spline(self) -> BSpline:
+        """The desired-position B-spline of the planned trajectory."""
         return self._des_pos_spline
 
     @property
     def control_points(self) -> NDArray:
+        """The optimized B-spline control points."""
         return self._control_points
 
     def episode_reset(self) -> None:
@@ -727,7 +733,8 @@ class SfcPlanner:
                     # Vertical U-turn: Drop down into the gate from above
                     swing_pos = pre_pos + up * 0.8
                 else:
-                    # Lateral U-turn: For side-by-side gates or gates facing the same general direction.
+                    # Lateral U-turn: For side-by-side gates or gates facing the same
+                    # general direction.
                     # Choose left or right approach based on the drone's incoming position.
                     dot_r = np.dot(raw_path[-1].pos - pos, right)
                     lat_dir = right if dot_r > 0 else -right

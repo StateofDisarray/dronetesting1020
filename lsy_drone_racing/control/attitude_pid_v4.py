@@ -25,6 +25,7 @@ from lsy_drone_racing.control.attitude_pid_v4.trajectory import (
 from lsy_drone_racing.control.attitude_pid_v4.tuning import QualificationTuning, gate1_offset_tuning
 
 if TYPE_CHECKING:
+    from crazyflow import Sim
     from numpy.typing import NDArray
 
 
@@ -50,6 +51,7 @@ class QualificationController(Controller):
     """Stateful attitude controller for the level-2 qualification track."""
 
     def __init__(self, obs: dict, info: dict, config: dict) -> None:
+        """Initialize the controller with track geometry, tuning, and the initial plan."""
         super().__init__(obs, info, config)
         self._env_freq = float(config.env.freq)
         self._dt = 1.0 / self._env_freq
@@ -156,6 +158,7 @@ class QualificationController(Controller):
     # ---- main step --------------------------------------------------------
 
     def compute_control(self, obs: dict, info: dict | None = None) -> "NDArray[np.floating]":
+        """Compute the attitude command for the current observation."""
         now = min(self._tick / self._env_freq, self._tuning.time_limit)
         frame = self._parse_obs(obs)
         if frame.target_gate == -1:
@@ -196,6 +199,7 @@ class QualificationController(Controller):
         truncated: bool,
         info: dict,
     ) -> bool:
+        """Advance the internal tick and flag completion when the last gate is passed."""
         self._tick += 1
         tgt = normalize_gate_index(obs["target_gate"])
         if tgt == -1:
@@ -203,12 +207,15 @@ class QualificationController(Controller):
         return self._finished
 
     def episode_callback(self) -> None:
+        """Reset the controller at the end of an episode."""
         self.reset()
 
     def episode_reset(self) -> None:
+        """Reset the controller's internal state for a new episode."""
         self.reset()
 
     def reset(self) -> None:
+        """Reset episode-local state, the PID controller, and the last action."""
         self._tick = 0
         self._finished = False
         self._active_leg = None
@@ -219,7 +226,8 @@ class QualificationController(Controller):
         self._pid.set_gains(self._tuning.section_gains[0])
         self._last_action = np.array([0.0, 0.0, 0.0, self._mass * self._gravity], dtype=np.float32)
 
-    def render_callback(self, sim) -> None:
+    def render_callback(self, sim: Sim) -> None:
+        """Draw the planned reference trajectory in the simulator."""
         if self._reference is None:
             return
         try:
@@ -234,6 +242,7 @@ class QualificationController(Controller):
             pass
 
     def diagnostic(self) -> dict:
+        """Return a snapshot of the controller's internal state for debugging."""
         return {
             "tick": self._tick,
             "active_leg": self._active_leg,

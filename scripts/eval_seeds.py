@@ -24,12 +24,16 @@ from gymnasium.wrappers.jax_to_numpy import JaxToNumpy
 from lsy_drone_racing.utils import load_config, load_controller
 
 if TYPE_CHECKING:
+    from ml_collections import ConfigDict
+
     from lsy_drone_racing.control.controller import Controller
 
 logger = logging.getLogger(__name__)
 
 
-def _classify_failure(config, last_obs: dict, gates_passed: int, truncated: bool) -> str:
+def _classify_failure(
+    config: ConfigDict, last_obs: dict, gates_passed: int, truncated: bool
+) -> str:
     """Tag *why* a run failed, using the drone's last pre-disable state.
 
     On a crash the env warps the drone to [-1,-1,-1], so we classify against the
@@ -66,7 +70,9 @@ def _classify_failure(config, last_obs: dict, gates_passed: int, truncated: bool
     return "other"
 
 
-def _run_one(env, controller_cls, config, seed: int) -> tuple[int, float, bool, str]:
+def _run_one(
+    env: gymnasium.Env, controller_cls: type[Controller], config: ConfigDict, seed: int
+) -> tuple[int, float, bool, str]:
     """Run a seeded episode. Returns (gates_passed, flight_time, finished, cause)."""
     obs, info = env.reset(seed=seed)
     controller: Controller = controller_cls(obs, info, config)
@@ -172,7 +178,8 @@ def evaluate_seeds(
         "records": records,
     }
     logger.info(
-        "SUMMARY: success=%d/%d (%.0f%%)  mean_ok_time=%s  fail_at_gate=%s  cause=%s  fail_seeds=%s",
+        "SUMMARY: success=%d/%d (%.0f%%)  mean_ok_time=%s  fail_at_gate=%s  "
+        "cause=%s  fail_seeds=%s",
         n_ok,
         n_total,
         100.0 * summary["success_rate"],

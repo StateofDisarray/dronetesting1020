@@ -1,3 +1,5 @@
+"""Tuning parameters for the SFC attitude controller."""
+
 import numpy as np
 
 # ==========================================

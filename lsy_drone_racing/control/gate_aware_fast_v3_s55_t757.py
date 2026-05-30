@@ -1,3 +1,5 @@
+"""Gate-aware MPC attitude controller (fast v3, seed 55 / tuning 757 variant)."""
+
 from __future__ import annotations
 
 import csv

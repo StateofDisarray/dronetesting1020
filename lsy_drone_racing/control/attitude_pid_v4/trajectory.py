@@ -12,10 +12,13 @@ from scipy.interpolate import CubicSpline, PchipInterpolator
 
 from .geometry import DEFAULT_OBSTACLES, gate_axis_points, gate_x_axis, gate_y_axis
 from .speed_profile import SectorSpeedProfile, schedule_knots
-from .tuning import RouteTuning
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from numpy.typing import NDArray
+
+    from .tuning import RouteTuning
 
 logger = logging.getLogger(__name__)
 
@@ -178,14 +181,14 @@ def _apply_override(
 
 def _build_interpolator(
     route_idx: int, knots: "NDArray[np.floating]", waypoints: "NDArray[np.floating]"
-):
+) -> "Callable[..., NDArray[np.floating]]":
     if route_idx <= 1:
         return CubicSpline(knots, waypoints, bc_type="natural")
     return PchipInterpolator(knots, waypoints)
 
 
 def _check_clearance(
-    reference,
+    reference: "Callable[..., NDArray[np.floating]]",
     route_idx: int,
     t_start: float,
     t_end: float,
@@ -231,7 +234,7 @@ def build_reference_curve(
     extra: "NDArray[np.floating] | None" = None,
     overrides: "Sequence[np.ndarray] | None" = None,
     depth: int = 0,
-):
+) -> "tuple[Callable[..., NDArray[np.floating]], float]":
     """Build the (interpolator, t_end) pair for one sector reference."""
     if obstacles is None:
         obstacles = DEFAULT_OBSTACLES
@@ -264,4 +267,5 @@ def build_reference_curve(
 
 
 def load_route_overrides() -> "list[np.ndarray] | None":
+    """Load per-sector waypoint overrides from the route override file, if present."""
     return _load_override_table()

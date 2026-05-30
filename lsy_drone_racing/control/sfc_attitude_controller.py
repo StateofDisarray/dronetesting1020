@@ -13,6 +13,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation as R
 
 if TYPE_CHECKING:
+    from crazyflow import Sim
     from numpy.typing import NDArray
 
 from drone_models.core import load_params
@@ -135,7 +136,8 @@ def compute_attitude_command(
 class SfcAttitudeController(Controller):
     """SFC tracker emitting [roll, pitch, yaw, thrust] via PID + acceleration FF."""
 
-    def __init__(self, obs, info, config) -> None:
+    def __init__(self, obs: dict, info: dict, config: dict) -> None:
+        """Initialize drone parameters, tracking state, and the SFC planner."""
         super().__init__(obs, info, config)
         self._freq = config.env.freq
         params = load_params(config.sim.physics, config.sim.drone_model)
@@ -154,7 +156,8 @@ class SfcAttitudeController(Controller):
         self._replan_idx = 0
         self.planner = SfcPlanner(obs, self._freq)
 
-    def compute_control(self, obs, info=None):
+    def compute_control(self, obs: dict, info: dict | None = None) -> "NDArray[np.floating]":
+        """Compute the attitude command tracking the planned SFC reference."""
         if self._yaw_prev is None:
             self._yaw_prev = float(R.from_quat(obs["quat"]).as_euler("xyz")[2])
 
@@ -218,12 +221,22 @@ class SfcAttitudeController(Controller):
 
         return action
 
-    def step_callback(self, action, obs, reward, terminated, truncated, info):
+    def step_callback(
+        self,
+        action: "NDArray[np.floating]",
+        obs: dict,
+        reward: float,
+        terminated: bool,
+        truncated: bool,
+        info: dict,
+    ) -> bool:
+        """Advance tick counters and report whether the run has finished."""
         self._tick += 1
         self._spline_tick += 1
         return self._finished
 
-    def episode_callback(self):
+    def episode_callback(self) -> None:
+        """Reset tracking state and the planner for a new episode."""
         self._tick = 0
         self._spline_tick = 0
         self._finished = False
@@ -234,7 +247,8 @@ class SfcAttitudeController(Controller):
         self._replan_idx = 0
         self.planner.episode_reset()
 
-    def render_callback(self, sim):
+    def render_callback(self, sim: Sim) -> None:
+        """Draw the planned reference spline and target point in the simulator."""
         if self.planner.t_total <= 0:
             return
         from crazyflow.sim.visualize import draw_line, draw_points
